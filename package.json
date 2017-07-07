@@ -1,0 +1,17 @@
+{
+  "name": "ChatServer",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "bcrypt": "^1.0.2",
+    "config": "^1.26.1",
+    "ejs": "*",
+    "express": "3.2.6",
+    "hashmap": "^2.1.0",
+    "mongoose": "^4.11.1",
+    "socket.io": "^2.0.3"
+  }
+}
