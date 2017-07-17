@@ -12,7 +12,6 @@ var express = require('express')
 
 var HashMap = require('hashmap');
 
-
 var mongoose = require('mongoose');
 
 var Message = require("./routes/api/message");
@@ -40,8 +39,6 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
-
-
 console.log("trying to make connection with mongodb");
 // Using `mongoose.connect`...
 mongoose.Promise = global.Promise;
@@ -66,12 +63,17 @@ app.get('/api/', apis.index);
 app.get('/api', apis.index);
 
 var userApi = require('./routes/api/user');
+var chatApi = require('./routes/api/chat');
 
 app.post("/api/login",userApi.login);
 
 app.post("/api/user",userApi.add);
 app.get("/api/user/:id",userApi.user);
 app.get("/api/user",userApi.userAll);
+
+app.post("/api/chat",chatApi.createChat);
+app.get("/api/chat",chatApi.chatList);
+app.delete("/api/chat",chatApi.deleteChat);
 
 io.sockets.on('connection', function(socket){   
 	
@@ -85,13 +87,8 @@ io.sockets.on('connection', function(socket){
 	 
 	 socket.on('message', function(data){
 		 console.log("message",data);
-		 try{
-			 socket.to(data.receiver_id).emit("message",data);
-		 }catch(err){
-			 console.error(err);
-		 }finally{
-			 Message.save(data);
-		 }
+		 Message.sendMessage(data,socket);
+		 
 	  });
 	  
 	 socket.on('disconnect', function(){

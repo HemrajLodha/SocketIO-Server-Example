@@ -1,16 +1,20 @@
-# SocketIO-Server-Example
-SocketIO Server Example with mongoDB
 
-## Features
-Real time communication using Socket.IO
 
-- Private Text Messeging (User to User).
-- Manage messages in mongoDB
+# ChatServer
 
-Get Android client code from following link 
-[SocketIO Android Client Example](https://github.com/HemrajLodha/SocketIO-Android-Client-Example)
 
-For read configuration setup and documentation go through following link
-[SocketIO Docs](https://socket.io/docs/)
 
-#### Note:- We are working on it and update for group chat and broadcasting in next build.
+## Usage
+
+
+
+## Developing
+
+
+
+### Tools
+
+Created with [Nodeclipse](https://github.com/Nodeclipse/nodeclipse-1)
+ ([Eclipse Marketplace](http://marketplace.eclipse.org/content/nodeclipse), [site](http://www.nodeclipse.org))   
+
+Nodeclipse is free open-source project that grows with your contributions.

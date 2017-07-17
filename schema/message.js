@@ -3,11 +3,18 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 var ObjectId = Schema.ObjectId;
 
+const MessageType = {
+		TEXT : 0,
+		PICTURE : 1,
+		VIDEO:2
+	};
+
 // create a schema
 var messageSchema = new Schema({
   sender_id: { type: ObjectId, required: true},
-  receiver_id: { type: ObjectId, required: true},
+  chat_id: { type: ObjectId, required: true},
   message: { type: String, required: true},
+  type: {type:Number, required:true},
   date : { type: Date, required: true, default : new Date()}
 });
 
@@ -21,4 +28,4 @@ messageSchema.pre('save',function(next){
 var Message = mongoose.model('Message', messageSchema);
 
 // make this available to our users in our Node applications
-module.exports = Message;
+module.exports = {Message,MessageType};

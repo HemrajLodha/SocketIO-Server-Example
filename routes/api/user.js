@@ -92,6 +92,7 @@ exports.add = function(req, res) {
 				});
 			}
 		});
+
 	} else {
 		res.status(400)
 				.json(
@@ -101,7 +102,7 @@ exports.add = function(req, res) {
 };
 
 exports.user = function(req, res) {
-	var id = req.params.id;
+	var id = req.query.id;
 	if (AppUtil.isObjectID(id)) {
 		User.findOne({
 			_id : id
@@ -136,18 +137,18 @@ exports.user = function(req, res) {
 };
 
 exports.userAll = function(req, res) {
-	var username = req.query.username;
-	if (username) {
+	var id = req.query.id;
+	if (AppUtil.isObjectID(id)) {
 		User.find({
-			username : {
-				$ne : username
+			_id : {
+				$ne : id
 			}
 		}, function(err, users) {
 			if (users) {
 				var data = [];
-				for(var i=0;i<users.length;i++){
+				for (var i = 0; i < users.length; i++) {
 					var user = users[i];
-					data.push( {
+					data.push({
 						id : user._id,
 						name : user.name,
 						username : user.username,
