@@ -58,6 +58,7 @@ exports.deleteChat = function(req, res) {
  * create new chat
  */
 exports.createChat = function(req, res) {
+	console.log("body", req.body);
 	var user_id = req.body.user_id;
 	var users = req.body.users;
 	var type = req.body.type;
@@ -188,7 +189,7 @@ exports.chatList = function(req, res) {
 													type : chat.type,
 													name : chatName,
 													update_date : chat.update_date,
-													last_message : chat.last_message_id ? chat.last_message_id.message
+													last_message : chat.last_message_id !== undefined ? chat.last_message_id.message
 															: "" || ""
 												});
 										break;

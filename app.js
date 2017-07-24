@@ -9,14 +9,27 @@ var express = require('express')
   , user = require('./routes/user')
   , http = require('http')
   , path = require('path');
+var mongoose = require('mongoose');
+
+var messageApi = require("./routes/api/message");
+
+var bodyParser = require('body-parser');
+
+var multer  = require('multer');
+var storage = multer.diskStorage({
+	  destination: function (req, file, cb) {
+	    cb(null, './public/uploads/');
+	  },
+	  filename: function (req, file, cb) {
+	    cb(null, file.fieldname + "-" + Date.now() + path.extname(file.originalname));
+	  }
+	});
+var upload = multer({ storage: storage });
 
 var HashMap = require('hashmap');
 
-var mongoose = require('mongoose');
-
-var Message = require("./routes/api/message");
-
 var app = express();
+
 
 // all environments
 app.set('port', process.env.PORT || 3000);
@@ -24,13 +37,15 @@ app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(express.favicon());
 app.use(express.logger('dev'));
-app.use(express.bodyParser());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 app.use(express.methodOverride());
 app.use(app.router);
 app.use(express.static(path.join(__dirname, 'public')));
 
 var server = http.createServer(app);
 var io = require('socket.io')(server);
+
 
 var clients = new HashMap();
 
@@ -75,7 +90,12 @@ app.post("/api/chat",chatApi.createChat);
 app.get("/api/chat",chatApi.chatList);
 app.delete("/api/chat",chatApi.deleteChat);
 
-io.sockets.on('connection', function(socket){   
+
+app.post("/api/message",upload.single("image"),messageApi.sendPictureMessage);
+
+
+
+io.sockets.on('connection', function(socket){
 	
 	 console.log("socket connected ");
 	 
@@ -87,8 +107,12 @@ io.sockets.on('connection', function(socket){
 	 
 	 socket.on('message', function(data){
 		 console.log("message",data);
-		 Message.sendMessage(data,socket);
-		 
+		 messageApi.sendMessage(data,socket);
+	  });
+	 
+	 socket.on('typing', function(data){
+		 console.log("typing",data);
+		 messageApi.sendMessage(data,socket);
 	  });
 	  
 	 socket.on('disconnect', function(){
