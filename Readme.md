@@ -1,20 +1,17 @@
+# SocketIO-Server-Example
+SocketIO Server Example
 
+## Features
+Real time communication using Socket.IO
 
-# ChatServer
+- Private and Group Text Messaging
+- Private and Group Image Messaging
+- Handle Chat and Messages using MongoDB (nosql database)
 
+Get Android client code from following link 
 
+[SocketIO Android Client Example](https://github.com/HemrajLodha/SocketIO-Android-Client-Example)
 
-## Usage
+For read configuration setup and documentation go through following link
 
-
-
-## Developing
-
-
-
-### Tools
-
-Created with [Nodeclipse](https://github.com/Nodeclipse/nodeclipse-1)
- ([Eclipse Marketplace](http://marketplace.eclipse.org/content/nodeclipse), [site](http://www.nodeclipse.org))   
-
-Nodeclipse is free open-source project that grows with your contributions.
+[SocketIO Docs](https://socket.io/docs/)
