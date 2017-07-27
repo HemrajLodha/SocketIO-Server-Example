@@ -13,20 +13,21 @@ var chatSchema = new Schema({
   name : {type:String},
   users: [{ type: ObjectId, required: true, ref:"User"}],
   last_message_id: { type: ObjectId, ref:"Message"},
-  date : { type: Date, required: true, default : new Date()},
   type :{ type:Number,required:true},
   admin_ids :[{type:ObjectId, ref:"User"}],
-  update_date : { type: Date, required: true, default : new Date()}
+  deleted : { type:Boolean, required:true, default:false},
+  create_date : { type: Number, required: true, default : new Date().getTime()},
+  update_date : { type: Number, required: true, default : new Date().getTime()}
 });
 
 chatSchema.pre('save',function(next){
-	this.date= new Date();
-	this.update_date= new Date();
+	this.create_date = new Date().getTime();
+	this.update_date = new Date().getTime();
 	next();
 });
 
 chatSchema.pre('update',function(next){
-	this.update_date= new Date();
+	this.update_date = new Date().getTime();
 	next();
 });
 

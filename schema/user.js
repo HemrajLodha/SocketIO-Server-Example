@@ -25,13 +25,14 @@ var userSchema = new Schema({
 	contacts : [ {
 		type : ObjectId
 	} ],
-	created_at : Date,
-	updated_at : Date
+	deleted : { type:Boolean, required:true, default:false},
+	create_date : { type: Number, required: true, default : new Date().getTime()},
+	update_date : { type: Number, required: true, default : new Date().getTime()},
 });
 
 userSchema.pre('save', function(next) {
-	this.created_at = new Date();
-	this.updated_at = new Date();
+	this.create_date = new Date().getTime();
+	this.update_date = new Date().getTime();
 	next();
 });
 

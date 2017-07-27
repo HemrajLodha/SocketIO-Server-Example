@@ -4,6 +4,7 @@ var Chat = require('./../../schema/chat').Chat;
 var ChatType = require('./../../schema/chat').ChatType;
 var response = require('./response');
 var AppUtil = require('../.././utils/AppUtil');
+const MAX_PAGE_SIZE = 50;
 
 exports.deleteChat = function(req, res) {
 	var user_id = req.body.user_id;
@@ -26,7 +27,9 @@ exports.deleteChat = function(req, res) {
 							response.createResponse(response.FAILED,
 									"Private chat can not be deleted!"));
 				} else {
-					chat.remove(function(err) {
+					chat.deleted = true;
+					chat.update_date = new Date().getTime();
+					chat.save(function(err) {
 						if (err) {
 							res.status(200).json(
 									response.createResponse(response.FAILED,
@@ -66,9 +69,15 @@ exports.createChat = function(req, res) {
 
 	if (AppUtil.isObjectID(user_id) && users && users.length != 0 && type) {
 		console.log("req", req.body);
+
+		if (typeof users === 'string') {
+			users = [ users ];
+		}
+
 		users.push(user_id); // push own user id
 		var createChat = function(chat) {
 			chat.admin_ids = [ user_id ];
+			chat.update_date = new Date().getTime();
 			chat.save(function(err) {
 				if (err) {
 					res.status(400).json(
@@ -132,80 +141,163 @@ exports.createChat = function(req, res) {
 };
 
 exports.chatList = function(req, res) {
+
 	var id = req.query.id;
+	var update_date = req.query.update_date;
+	var deleted = AppUtil.getBoolean(req.query.deleted, false);
+	var pageNo = parseInt(req.query.pageNo || 1);
+	if (pageNo != 0) {
+		pageNo--; // decrement page no by 1
+	}
+	var limit = parseInt(req.query.limit || MAX_PAGE_SIZE);
+
 	if (AppUtil.isObjectID(id)) {
 		id = [ id ];
-		Chat
-				.find({
+
+		var query = {};
+
+		if (update_date) {
+			query = {
+				$and : [ {
 					users : {
 						$in : id
 					}
-				})
-				.populate("users", null, {
-					_id : {
-						$ne : id
+				}, {
+					update_date : {
+						$gte : parseInt(update_date)
 					}
-				})
-				.populate("last_message_id")
-				.exec(
-						function(err, chats) {
-							console.log("chats", chats);
-							if (chats && chats.length) {
-								var chatData = [];
-								for (var i = 0; i < chats.length; i++) {
-									var chat = chats[i];
+				} ]
+			};
+		} else {
+			query = {
+				users : {
+					$in : id
+				}
+			};
+		}
 
-									switch (parseInt(chat.type)) {
-									case ChatType.PERSONAL:
-										chatData
-												.push({
-													id : chat._id,
-													type : chat.type,
-													name : chat.users[0].name,
-													update_date : chat.update_date,
-													last_message : chat.last_message_id !== undefined ? chat.last_message_id.message
-															: "" || ""
-												});
-										break;
-									case ChatType.GROUP:
-										var chatName = "";
-										for (var j = 0; j < chat.users.length; j++) {
-											if (chatName === "") {
-												chatName = chat.users[j].name;
-											} else if (j < 2) {
-												chatName = chatName + ", "
-														+ chat.users[j].name;
-											} else {
-												chatName = chatName
-														+ "... +"
-														+ (chat.users.length - j);
-												break;
-											}
-										}
-										console.log("chatName", chatName);
-										chatData
-												.push({
-													id : chat._id,
-													type : chat.type,
-													name : chatName,
-													update_date : chat.update_date,
-													last_message : chat.last_message_id !== undefined ? chat.last_message_id.message
-															: "" || ""
-												});
-										break;
-									}
-								}
+		if (deleted) {
+			// do nothing in case of deleted data fetching
+		} else {
+			query.deleted = deleted;
+		}
 
+		Chat
+				.count(
+						query,
+						function(err, count) {
+							if (err) {
+								console.error("err", err);
 								res.status(200).json(
 										response.createResponse(
-												response.SUCCESS, "Success",
-												chatData));
-							} else {
-								res.status(400).json(
-										response.createResponse(
 												response.FAILED, "Failed"));
+							} else {
+								Chat
+										.find(query)
+										.skip(pageNo * limit)
+										.limit(limit)
+										.sort({
+											update_date : -1
+										})
+										.populate("users", null, {
+											_id : {
+												$ne : id
+											}
+										})
+										.populate("last_message_id")
+										.exec(
+												function(err, chats) {
+													// console.log("chats",
+													// chats);
+													if (!err && chats) {
+														var chatData = [];
+														for (var i = 0; i < chats.length; i++) {
+															var chat = chats[i];
+															var chatUsers = [];
+
+															for (var x = 0; x < chat.users.length; x++) {
+																chatUsers
+																		.push({
+																			id : chat.users[x]._id,
+																			name : chat.users[x].name
+																		});
+															}
+
+															switch (parseInt(chat.type)) {
+															case ChatType.PERSONAL:
+																chatData
+																		.push({
+																			id : chat._id,
+																			type : chat.type,
+																			name : chatUsers[0].name,
+																			users : chatUsers,
+																			admin_ids : chat.admin_ids,
+																			deleted : chat.deleted,
+																			create_date : chat.create_date,
+																			update_date : chat.update_date,
+																			last_message : chat.last_message_id !== undefined ? chat.last_message_id.message
+																					: ""
+																							|| ""
+																		});
+																break;
+															case ChatType.GROUP:
+																var chatName = "";
+																for (var j = 0; j < chat.users.length; j++) {
+																	if (chatName === "") {
+																		chatName = chat.users[j].name;
+																	} else if (j < 2) {
+																		chatName = chatName
+																				+ ", "
+																				+ chat.users[j].name;
+																	} else {
+																		chatName = chatName
+																				+ "... +"
+																				+ (chat.users.length - j);
+																		break;
+																	}
+																}
+																chatData
+																		.push({
+																			id : chat._id,
+																			type : chat.type,
+																			name : chatName,
+																			users : chatUsers,
+																			admin_ids : chat.admin_ids,
+																			deleted : chat.deleted,
+																			create_date : chat.create_date,
+																			update_date : chat.update_date,
+																			last_message : chat.last_message_id !== undefined ? chat.last_message_id.message
+																					: ""
+																							|| ""
+																		});
+																break;
+															}
+														}
+
+														res
+																.status(200)
+																.json(
+																		response
+																				.createResponse(
+																						response.SUCCESS,
+																						"Success",
+																						chatData,
+																						count,
+																						pageNo,
+																						limit));
+													} else {
+														res
+																.status(200)
+																.json(
+																		response
+																				.createResponse(
+																						response.FAILED,
+																						"Failed"));
+													}
+												});
 							}
 						});
+
 	} else {
 		res.status(400)
 				.json(

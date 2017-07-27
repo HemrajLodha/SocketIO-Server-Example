@@ -23,11 +23,11 @@ var messageSchema = new Schema({
   message: { type: String},
   image_url : { type: String},
   type: {type:Number, required:true},
-  date : { type: Date, required: true, default : new Date()}
+  date : { type: Number, required: true, default : new Date().getTime()}
 });
 
 messageSchema.pre('save',function(next){
-	this.date= new Date();
+	this.date= new Date().getTime();
 	next();
 });
 
