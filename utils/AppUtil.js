@@ -4,6 +4,15 @@ var isObjectID = function(id) {
 	return objectID.isValid(id);
 };
 
+var isTypeString = function(data) {
+	try {
+		return typeof data === "string";
+	} catch (e) {
+		console.error("error", e);
+		return false;
+	}
+};
+
 var parseJSON = function(data) {
 	try {
 		return JSON.parse(str);
@@ -29,3 +38,4 @@ var getBoolean = function(data, defType) {
 exports.isObjectID = isObjectID;
 exports.parseJSON = parseJSON;
 exports.getBoolean = getBoolean;
+exports.isTypeString = isTypeString;

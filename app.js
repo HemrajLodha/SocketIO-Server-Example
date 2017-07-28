@@ -79,6 +79,7 @@ app.get('/api', apis.index);
 
 var userApi = require('./routes/api/user');
 var chatApi = require('./routes/api/chat');
+var contactApi = require('./routes/api/contact');
 
 app.post("/api/login",userApi.login);
 
@@ -89,6 +90,10 @@ app.get("/api/user",userApi.userAll);
 app.post("/api/chat",chatApi.createChat);
 app.get("/api/chat",chatApi.chatList);
 app.delete("/api/chat",chatApi.deleteChat);
+
+app.post("/api/contact",contactApi.createContact);
+app.get("/api/contact",contactApi.contactList);
+app.delete("/api/contact",contactApi.deleteContact);
 
 
 app.post("/api/message",upload.single("image"),messageApi.sendPictureMessage);

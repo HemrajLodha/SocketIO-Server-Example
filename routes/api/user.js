@@ -155,6 +155,7 @@ exports.userAll = function(req, res) {
 						password : user.password,
 						admin : user.admin,
 						location : user.location,
+						update_date : user.update_date,
 						meta : {
 							age : user.meta.age,
 							email : user.meta.email,

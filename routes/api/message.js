@@ -4,6 +4,7 @@ var EventType = require('../.././schema/message').EventType;
 var response = require('./response');
 var AppUtil = require('../.././utils/AppUtil');
 var fs = require('fs');
+const MAX_PAGE_SIZE = 50;
 
 var saveMessage = function(chat, data) {
 	console.log("data", data);
@@ -38,7 +39,7 @@ exports.sendMessage = function(data, socket) {
 		} else {
 			try {
 				for (var i = 0; i < chat.users.length; i++) {
-					if (chat.users[i] != data.sender_id) {
+					if (chat.users[i] !== data.sender_id) {
 						socket.to(chat.users[i]).emit("message", data);
 					}
 				}
@@ -51,7 +52,7 @@ exports.sendMessage = function(data, socket) {
 				}
 			}
 		}
-	})
+	});
 };
 
 exports.sendPictureMessage = function(req, res) {
@@ -81,4 +82,30 @@ exports.sendPictureMessage = function(req, res) {
 		res.status(200)
 				.json(response.createResponse(response.FAILED, "Failed"))
 	}
+};
+
+exports.getMessage = function(req, res) {
+	var id = req.query.id;
+	var update_date = req.query.update_date;
+	var pageNo = parseInt(req.query.pageNo || 1);
+	if (pageNo !== 0) {
+		pageNo--; // decrement page no by 1
+	}
+	var limit = parseInt(req.query.limit || MAX_PAGE_SIZE);
+
+	if (AppUtil.isObjectID(id)) {
+		var query = {};
+
+		if (update_date) {
+			query = {};
+		} else {
+
+		}
+	} else {
+		res.status(400)
+				.json(
+						response.createResponse(response.FAILED,
+								"Misssing Parameter!"));
+	}
+
 };

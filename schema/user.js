@@ -22,9 +22,6 @@ var userSchema = new Schema({
 		website : String,
 		contact : String
 	},
-	contacts : [ {
-		type : ObjectId
-	} ],
 	deleted : { type:Boolean, required:true, default:false},
 	create_date : { type: Number, required: true, default : new Date().getTime()},
 	update_date : { type: Number, required: true, default : new Date().getTime()},

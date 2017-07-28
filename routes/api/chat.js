@@ -78,18 +78,48 @@ exports.createChat = function(req, res) {
 		var createChat = function(chat) {
 			chat.admin_ids = [ user_id ];
 			chat.update_date = new Date().getTime();
-			chat.save(function(err) {
-				if (err) {
-					res.status(400).json(
-							response.createResponse(response.FAILED,
-									"Fialed to create personal chat"));
-				} else {
-					res.status(200)
-							.json(
-									response.createResponse(response.SUCCESS,
-											"Success"));
-				}
-			})
+			chat
+					.save(function(err) {
+						if (err) {
+							res.status(400).json(
+									response.createResponse(response.FAILED,
+											"Fialed to create personal chat"));
+						} else {
+
+							Chat
+									.findById(chat._id)
+									.populate("users", null, {
+										_id : {
+											$ne : user_id
+										}
+									})
+									.populate("last_message_id")
+									.exec(
+											function(err, chatData) {
+												if (!err && chatData) {
+													var data = getChatData(chatData);
+													data = [ data ];
+													res
+															.status(200)
+															.json(
+																	response
+																			.createResponse(
+																					response.SUCCESS,
+																					"Success",
+																					data));
+												} else {
+													res
+															.status(200)
+															.json(
+																	response
+																			.createResponse(
+																					response.SUCCESS,
+																					"Chat created but failed to get data"));
+												}
+
+											});
+						}
+					});
 		};
 
 		switch (parseInt(type)) {
@@ -140,13 +170,69 @@ exports.createChat = function(req, res) {
 
 };
 
+var getChatData = function(chat) {
+
+	var chatUsers = [];
+	var chatData = {};
+
+	for (var x = 0; x < chat.users.length; x++) {
+		chatUsers.push({
+			id : chat.users[x]._id,
+			name : chat.users[x].name
+		});
+	}
+
+	switch (parseInt(chat.type)) {
+	case ChatType.PERSONAL:
+		chatData = {
+			id : chat._id,
+			type : chat.type,
+			name : chatUsers[0].name,
+			users : chatUsers,
+			admin_ids : chat.admin_ids,
+			deleted : chat.deleted,
+			create_date : chat.create_date,
+			update_date : chat.update_date,
+			last_message : chat.last_message_id !== undefined ? chat.last_message_id.message
+					: "" || ""
+		};
+		break;
+	case ChatType.GROUP:
+		var chatName = "";
+		for (var j = 0; j < chat.users.length; j++) {
+			if (chatName === "") {
+				chatName = chat.users[j].name;
+			} else if (j < 2) {
+				chatName = chatName + ", " + chat.users[j].name;
+			} else {
+				chatName = chatName + "... +" + (chat.users.length - j);
+				break;
+			}
+		}
+		chatData = {
+			id : chat._id,
+			type : chat.type,
+			name : chatName,
+			users : chatUsers,
+			admin_ids : chat.admin_ids,
+			deleted : chat.deleted,
+			create_date : chat.create_date,
+			update_date : chat.update_date,
+			last_message : chat.last_message_id !== undefined ? chat.last_message_id.message
+					: "" || ""
+		};
+		break;
+	}
+	return chatData;
+};
+
 exports.chatList = function(req, res) {
 
 	var id = req.query.id;
 	var update_date = req.query.update_date;
 	var deleted = AppUtil.getBoolean(req.query.deleted, false);
 	var pageNo = parseInt(req.query.pageNo || 1);
-	if (pageNo != 0) {
+	if (pageNo !== 0) {
 		pageNo--; // decrement page no by 1
 	}
 	var limit = parseInt(req.query.limit || MAX_PAGE_SIZE);
@@ -154,27 +240,17 @@ exports.chatList = function(req, res) {
 	if (AppUtil.isObjectID(id)) {
 		id = [ id ];
 
-		var query = {};
-
-		if (update_date) {
-			query = {
-				$and : [ {
-					users : {
-						$in : id
-					}
-				}, {
-					update_date : {
-						$gte : parseInt(update_date)
-					}
-				} ]
-			};
-		} else {
-			query = {
+		var query = {
+			$and : [ {
 				users : {
 					$in : id
 				}
-			};
-		}
+			}, {
+				update_date : {
+					$gte : parseInt(update_date)
+				}
+			} ]
+		};
 
 		if (deleted) {
 			// do nothing in case of deleted data fetching
@@ -182,121 +258,42 @@ exports.chatList = function(req, res) {
 			query.deleted = deleted;
 		}
 
-		Chat
-				.count(
-						query,
-						function(err, count) {
-							if (err) {
-								console.error("err", err);
+		Chat.count(query, function(err, count) {
+			if (err) {
+				console.error("err", err);
+				res.status(200).json(
+						response.createResponse(response.FAILED, "Failed"));
+			} else {
+				Chat.find(query).skip(pageNo * limit).limit(limit).sort({
+					update_date : -1
+				}).populate("users", null, {
+					_id : {
+						$ne : id
+					}
+				}).populate("last_message_id").exec(
+						function(err, chats) {
+							// console.log("chats",
+							// chats);
+							if (!err && chats) {
+								var chatData = [];
+								for (var i = 0; i < chats.length; i++) {
+									var chat = chats[i];
+									chatData.push(getChatData(chat));
+								}
+								res.status(200)
+										.json(
+												response.createResponse(
+														response.SUCCESS,
+														"Success", chatData,
+														count, pageNo, limit));
+							} else {
 								res.status(200).json(
 										response.createResponse(
 												response.FAILED, "Failed"));
-							} else {
-								Chat
-										.find(query)
-										.skip(pageNo * limit)
-										.limit(limit)
-										.sort({
-											update_date : -1
-										})
-										.populate("users", null, {
-											_id : {
-												$ne : id
-											}
-										})
-										.populate("last_message_id")
-										.exec(
-												function(err, chats) {
-													// console.log("chats",
-													// chats);
-													if (!err && chats) {
-														var chatData = [];
-														for (var i = 0; i < chats.length; i++) {
-															var chat = chats[i];
-															var chatUsers = [];
-
-															for (var x = 0; x < chat.users.length; x++) {
-																chatUsers
-																		.push({
-																			id : chat.users[x]._id,
-																			name : chat.users[x].name
-																		});
-															}
-
-															switch (parseInt(chat.type)) {
-															case ChatType.PERSONAL:
-																chatData
-																		.push({
-																			id : chat._id,
-																			type : chat.type,
-																			name : chatUsers[0].name,
-																			users : chatUsers,
-																			admin_ids : chat.admin_ids,
-																			deleted : chat.deleted,
-																			create_date : chat.create_date,
-																			update_date : chat.update_date,
-																			last_message : chat.last_message_id !== undefined ? chat.last_message_id.message
-																					: ""
-																							|| ""
-																		});
-																break;
-															case ChatType.GROUP:
-																var chatName = "";
-																for (var j = 0; j < chat.users.length; j++) {
-																	if (chatName === "") {
-																		chatName = chat.users[j].name;
-																	} else if (j < 2) {
-																		chatName = chatName
-																				+ ", "
-																				+ chat.users[j].name;
-																	} else {
-																		chatName = chatName
-																				+ "... +"
-																				+ (chat.users.length - j);
-																		break;
-																	}
-																}
-																chatData
-																		.push({
-																			id : chat._id,
-																			type : chat.type,
-																			name : chatName,
-																			users : chatUsers,
-																			admin_ids : chat.admin_ids,
-																			deleted : chat.deleted,
-																			create_date : chat.create_date,
-																			update_date : chat.update_date,
-																			last_message : chat.last_message_id !== undefined ? chat.last_message_id.message
-																					: ""
-																							|| ""
-																		});
-																break;
-															}
-														}
-
-														res
-																.status(200)
-																.json(
-																		response
-																				.createResponse(
-																						response.SUCCESS,
-																						"Success",
-																						chatData,
-																						count,
-																						pageNo,
-																						limit));
-													} else {
-														res
-																.status(200)
-																.json(
-																		response
-																				.createResponse(
-																						response.FAILED,
-																						"Failed"));
-													}
-												});
 							}
 						});
+			}
+		});
 
 	} else {
 		res.status(400)
