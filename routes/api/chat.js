@@ -229,7 +229,7 @@ var getChatData = function(chat) {
 exports.chatList = function(req, res) {
 
 	var id = req.query.id;
-	var update_date = req.query.update_date;
+	var update_date = req.query.update_date || 0;
 	var deleted = AppUtil.getBoolean(req.query.deleted, false);
 	var pageNo = parseInt(req.query.pageNo || 1);
 	if (pageNo !== 0) {

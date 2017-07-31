@@ -18,7 +18,7 @@ const EventType = {
 
 // create a schema
 var messageSchema = new Schema({
-  sender_id: { type: ObjectId, required: true},
+  sender_id: { type: ObjectId, required: true, ref : "User"},
   chat_id: { type: ObjectId, required: true},
   message: { type: String},
   image_url : { type: String},

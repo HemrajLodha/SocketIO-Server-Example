@@ -65,7 +65,7 @@ exports.sendPictureMessage = function(req, res) {
 	var image = req.file;
 
 	if (image) {
-		var data = {
+		var data = [ {
 			sender_id : sender_id,
 			sender_name : sender_name,
 			receiver_id : receiver_id,
@@ -73,7 +73,7 @@ exports.sendPictureMessage = function(req, res) {
 			message_type : message_type,
 			event : event,
 			image_url : image.filename,
-		}
+		} ];
 
 		res.status(200).json(
 				response.createResponse(response.SUCCESS,
@@ -84,9 +84,10 @@ exports.sendPictureMessage = function(req, res) {
 	}
 };
 
-exports.getMessage = function(req, res) {
+exports.messageList = function(req, res) {
+
 	var id = req.query.id;
-	var update_date = req.query.update_date;
+	var date = req.query.last_message_date || 0;
 	var pageNo = parseInt(req.query.pageNo || 1);
 	if (pageNo !== 0) {
 		pageNo--; // decrement page no by 1
@@ -94,18 +95,58 @@ exports.getMessage = function(req, res) {
 	var limit = parseInt(req.query.limit || MAX_PAGE_SIZE);
 
 	if (AppUtil.isObjectID(id)) {
-		var query = {};
+		var query = {
+			chat_id : id,
+			date : {
+				$gt : parseInt(date)
+			}
+		};
 
-		if (update_date) {
-			query = {};
-		} else {
+		Message.count(query, function(err, count) {
+			if (err) {
+				console.error("err", err);
+				res.status(200).json(
+						response.createResponse(response.FAILED, "Failed"));
+			} else {
 
-		}
+				Message.find(query).skip(pageNo * limit).limit(limit).sort({
+					date : -1
+				}).populate("sender_id").exec(
+						function(err, messages) {
+							if (!err && messages) {
+
+								var messageData = [];
+								for (var i = messages.length - 1; i >= 0; i--) {
+									var message = messages[i];
+									messageData.push({
+										id : message._id,
+										sender_id : message.sender_id._id,
+										sender_name : message.sender_id.name,
+										chat_id : message.chat_id,
+										message_type : message.type,
+										image_url : message.image_url,
+										t_message : message.message,
+										date : message.date
+									});
+								}
+								res.status(200).json(
+										response.createResponse(
+												response.SUCCESS, "Success",
+												messageData, count, pageNo,
+												limit));
+							} else {
+								res.status(200).json(
+										response.createResponse(
+												response.FAILED, "Failed"));
+							}
+						});
+			}
+		});
+
 	} else {
 		res.status(400)
 				.json(
 						response.createResponse(response.FAILED,
 								"Misssing Parameter!"));
 	}
-
 };

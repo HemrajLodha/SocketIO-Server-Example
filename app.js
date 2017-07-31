@@ -95,7 +95,7 @@ app.post("/api/contact",contactApi.createContact);
 app.get("/api/contact",contactApi.contactList);
 app.delete("/api/contact",contactApi.deleteContact);
 
-
+app.get("/api/message",messageApi.messageList);
 app.post("/api/message",upload.single("image"),messageApi.sendPictureMessage);
 
 
