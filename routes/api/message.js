@@ -9,6 +9,7 @@ const MAX_PAGE_SIZE = 50;
 var saveMessage = function(chat, data) {
 	console.log("data", data);
 	var message = new Message({
+		message_id : data.message_id,
 		sender_id : data.sender_id,
 		chat_id : data.receiver_id,
 		type : data.message_type,
@@ -104,7 +105,7 @@ exports.messageList = function(req, res) {
 
 		Message.count(query, function(err, count) {
 			if (err) {
-				console.error("err", err);
+				// console.error("err", err);
 				res.status(200).json(
 						response.createResponse(response.FAILED, "Failed"));
 			} else {
@@ -119,7 +120,7 @@ exports.messageList = function(req, res) {
 								for (var i = messages.length - 1; i >= 0; i--) {
 									var message = messages[i];
 									messageData.push({
-										id : message._id,
+										id : message.message_id,
 										sender_id : message.sender_id._id,
 										sender_name : message.sender_id.name,
 										chat_id : message.chat_id,

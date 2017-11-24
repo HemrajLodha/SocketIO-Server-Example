@@ -272,8 +272,7 @@ exports.chatList = function(req, res) {
 					}
 				}).populate("last_message_id").exec(
 						function(err, chats) {
-							// console.log("chats",
-							// chats);
+							console.log("err", err);
 							if (!err && chats) {
 								var chatData = [];
 								for (var i = 0; i < chats.length; i++) {
